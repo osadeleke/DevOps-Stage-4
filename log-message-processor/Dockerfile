@@ -1,8 +1,15 @@
 # Use an official Python runtime as the base image
-FROM python:3.8-slim
+FROM python:3.8
 
 # Set the working directory
 WORKDIR /app
+
+# Install some system dependencies
+RUN apt update && apt install -y \
+    build-essential \
+    python3-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements.txt
 COPY requirements.txt .
