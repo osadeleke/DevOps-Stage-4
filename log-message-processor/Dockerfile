@@ -13,8 +13,8 @@ RUN apt-get update && \
 COPY requirements.txt .
 
 # Install dependencies
-# RUN pip3 install -r requirements.txt
-RUN pip3 install redis==2.10.6 py_zipkin==0.11.0 requests
+RUN pip3 install -r requirements.txt
+# RUN pip3 install redis==2.10.6 py_zipkin==0.11.0 requests
 
 
 # Copy the rest of the application code
