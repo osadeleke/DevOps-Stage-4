@@ -12,7 +12,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Use an official OpenJDK runtime as the base image
-FROM openjdk:17-jdk-alpine
+FROM openjdk:8-jdk-alpine
 
 # Set the working directory
 WORKDIR /app
