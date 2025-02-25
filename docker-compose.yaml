@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - auth-api
+      - todos-api
+      - users-api
+    networks:
+      - app-network
+
+  auth-api:
+    build: ./auth-api
+    ports:
+      - "8081:8080"
+    networks:
+      - app-network
+
+  todos-api:
+    build: ./todos-api
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+
+  users-api:
+    build: ./users-api
+    ports:
+      - "8082:8080"
+    networks:
+      - app-network
+
+  log-processor:
+    build: ./log-message-processor
+    ports:
+      - "5000:5000"
+    networks:
+      - app-network
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
