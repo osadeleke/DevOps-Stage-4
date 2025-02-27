@@ -3,7 +3,9 @@ version: '3.8'
 services:
   traefik:
     image: traefik:v2.10
+    container_name: traefik
     command:
+      - "--log.level=DEBUG"
       - "--api.insecure=false"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
@@ -15,15 +17,14 @@ services:
       - "--certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.letsencryptresolver.acme.email=oadeleke123@gmail.com"
       - "--certificatesresolvers.letsencryptresolver.acme.storage=/etc/traefik/acme.json"
-      - "--providers.docker.defaultRule=Host(`thesegunadeleke.space`)"
     ports:
       - "80:80"
-      - "8080:8080"
+      - "443:443"
+    networks:
+      - app-network
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik-certificates:/etc/traefik
-    networks:
-      - app-network
     labels:
       - "traefik.enable=true"
       - "traefik.http.middlewares.cors.headers.accesscontrolalloworiginlist=*"
@@ -32,38 +33,45 @@ services:
       - "traefik.http.middlewares.cors.headers.accesscontrolmaxage=100"
       - "traefik.http.middlewares.cors.headers.addvaryheader=true"
 
-
   frontend:
     build: ./frontend
     environment:
-      # - PORT=8080
-      - AUTH_API_ADDRESS=http://auth-api:8081
-      - TODOS_API_ADDRESS=http://todos-api:8082
+      - TODOS_API_ADDRESS=https://thesegunadeleke.space/api/todos
+      - AUTH_API_ADDRESS=https://thesegunadeleke.space/api/auth
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - auth-api
       - todos-api
       - users-api
+    networks:
+      - app-network
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`thesegunadeleke.space`)"
       - "traefik.http.services.frontend.loadbalancer.server.port=8080"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=letsencryptresolver"
-    networks:
-      - app-network
 
   auth-api:
     build: ./auth-api
     environment:
       - AUTH_API_PORT=8081
-      - USERS_API_ADDRESS=http://users-api:8083
       - JWT_SECRET="fancy secret here"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.auth.rule=PathPrefix(`/login`)"
-      - "traefik.http.services.auth.loadbalancer.server.port=8081"
+      - USERS_API_ADDRESS=http://users-api:8083
+    depends_on:
+      - users-api
     networks:
       - app-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=Host(`thesegunadeleke.space`) && PathPrefix(`/api/auth`)"
+      - "traefik.http.services.auth.loadbalancer.server.port=8081"
+      - "traefik.http.middlewares.auth-stripprefix.stripprefix.prefixes=/api/auth"
+      - "traefik.http.routers.auth.middlewares=auth-stripprefix,cors"
+      - "traefik.http.routers.auth.entrypoints=websecure"
+      - "traefik.http.routers.auth.tls.certresolver=letsencryptresolver"
 
   todos-api:
     build: ./todos-api
@@ -73,26 +81,34 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_CHANNEL=log_channel
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.todos.rule=PathPrefix(`/todos`)"
-      - "traefik.http.services.todos.loadbalancer.server.port=8082"
     depends_on:
       - redis
     networks:
       - app-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.todos.rule=Host(`thesegunadeleke.space`) && PathPrefix(`/api/todos`)"
+      - "traefik.http.services.todos.loadbalancer.server.port=8082"
+      - "traefik.http.middlewares.todos-stripprefix.stripprefix.prefixes=/api/todos"
+      - "traefik.http.routers.todos.middlewares=todos-stripprefix"
+      - "traefik.http.routers.todos.entrypoints=websecure"
+      - "traefik.http.routers.todos.tls.certresolver=letsencryptresolver"
 
   users-api:
     build: ./users-api
     environment:
       - SERVER_PORT=8083
       - JWT_SECRET="fancy secret here"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.users.rule=PathPrefix(`/users`)"
-      - "traefik.http.services.users.loadbalancer.server.port=8083"
     networks:
       - app-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.users.rule=Host(`thesegunadeleke.space`) && PathPrefix(`/api/users`)"
+      - "traefik.http.services.users.loadbalancer.server.port=8083"
+      - "traefik.http.middlewares.users-stripprefix.stripprefix.prefixes=/api/users"
+      - "traefik.http.routers.users.middlewares=users-stripprefix"
+      - "traefik.http.routers.users.entrypoints=websecure"
+      - "traefik.http.routers.users.tls.certresolver=letsencryptresolver"
 
   log-processor:
     build: ./log-message-processor
