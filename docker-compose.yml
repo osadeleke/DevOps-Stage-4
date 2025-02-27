@@ -72,6 +72,9 @@ services:
       - "traefik.http.routers.auth.middlewares=auth-stripprefix,cors"
       - "traefik.http.routers.auth.entrypoints=websecure"
       - "traefik.http.routers.auth.tls.certresolver=letsencryptresolver"
+      - "traefik.http.middlewares.auth-block-restricted.errors.status=404"
+      - "traefik.http.middlewares.auth-block-restricted.errors.service=auth"
+      - "traefik.http.routers.auth.middlewares=auth-block-restricted"
 
   todos-api:
     build: ./todos-api
@@ -93,6 +96,8 @@ services:
       - "traefik.http.routers.todos.middlewares=todos-stripprefix"
       - "traefik.http.routers.todos.entrypoints=websecure"
       - "traefik.http.routers.todos.tls.certresolver=letsencryptresolver"
+      - "traefik.http.middlewares.todos-auth.forwardauth.address=http://auth-api:8081/auth/validate"
+      - "traefik.http.routers.todos.middlewares=todos-auth"
 
   users-api:
     build: ./users-api
@@ -109,6 +114,8 @@ services:
       - "traefik.http.routers.users.middlewares=users-stripprefix"
       - "traefik.http.routers.users.entrypoints=websecure"
       - "traefik.http.routers.users.tls.certresolver=letsencryptresolver"
+      - "traefik.http.middlewares.users-auth.forwardauth.address=http://auth-api:8081/auth/validate"
+      - "traefik.http.routers.users.middlewares=users-auth"
 
   log-processor:
     build: ./log-message-processor
