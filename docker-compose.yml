@@ -34,7 +34,7 @@ services:
     environment:
       - AUTH_API_PORT=8081
       - USERS_API_ADDRESS=http://users-api:8083
-      - JWT_SECRET=your-secret-here
+      - JWT_SECRET="fancy secret here"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.auth.rule=PathPrefix(`/login`)"
