@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN go build -o auth-api .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o auth-api .
 
 # Expose port 8080
 EXPOSE 8080
